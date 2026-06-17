@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: face-analyzer-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: free
+    envVars:
+      - key: BACKEND_CORS_ORIGIN
+        value: https://fivegfinder-app.web.app
