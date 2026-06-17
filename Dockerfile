@@ -1,9 +1,9 @@
-FROM python:3.10
+FROM python:3.10.14-bullseye
 
 WORKDIR /app
 
-# System libs for OpenCV + MediaPipe on headless Linux
-RUN apt-get update && apt-get install -y \
+# System libs required by opencv-python-headless and mediapipe
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
     libsm6 \
