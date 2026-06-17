@@ -47,7 +47,11 @@ if not os.path.exists(MODEL_PATH):
     urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
     print("[setup] Model downloaded.")
 
-_base_options  = mp_python.BaseOptions(model_asset_path=MODEL_PATH)
+# Force CPU delegate — prevents loading GPU/OpenGL libs on headless servers
+_base_options  = mp_python.BaseOptions(
+    model_asset_path=MODEL_PATH,
+    delegate=mp_python.BaseOptions.Delegate.CPU,
+)
 _face_options  = mp_vision.FaceLandmarkerOptions(
     base_options=_base_options,
     output_face_blendshapes=False,
