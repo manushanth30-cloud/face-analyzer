@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     libxrender-dev \
+    libgles2 \
+    libegl1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
