@@ -11,7 +11,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision as mp_vision
-from PIL import Image
+from PIL import Image, ImageOps
 
 from brow_analyzer import analyze_brows
 from eye_analyzer import analyze_eyes
@@ -95,14 +95,21 @@ async def analyze(file: UploadFile = File(...)):
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="Image too large. Max size is 10 MB.")
 
-    # Validate image
+    # Validate image & fix phone EXIF rotation
     try:
-        pil_img = Image.open(io.BytesIO(content)).convert("RGB")
+        pil_img = Image.open(io.BytesIO(content))
+        pil_img = ImageOps.exif_transpose(pil_img)  # Fix phone rotation
+        pil_img = pil_img.convert("RGB")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid image file.")
 
+    # Re-encode with corrected orientation so base64 matches display
+    buf = io.BytesIO()
+    pil_img.save(buf, format="JPEG", quality=92)
+    corrected_bytes = buf.getvalue()
+
     async with SEMAPHORE:
-        return await asyncio.get_event_loop().run_in_executor(None, _run_analysis, pil_img, content)
+        return await asyncio.get_event_loop().run_in_executor(None, _run_analysis, pil_img, corrected_bytes)
 
 
 def _run_analysis(pil_img: Image.Image, raw_bytes: bytes):
