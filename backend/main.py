@@ -26,11 +26,11 @@ from skin_analyzer import analyze_skin
 # ── App setup ─────────────────────────────────────────────────────────────────
 app = FastAPI(title="Facial Feature Analysis API", version="1.0.0")
 
-CORS_ORIGIN = os.getenv("BACKEND_CORS_ORIGIN", "http://localhost:3000")
+CORS_ORIGIN = os.getenv("BACKEND_CORS_ORIGIN", "*")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[CORS_ORIGIN, "http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
