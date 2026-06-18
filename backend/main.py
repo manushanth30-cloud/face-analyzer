@@ -14,6 +14,7 @@ from mediapipe.tasks.python import vision as mp_vision
 from PIL import Image, ImageOps
 
 from brow_analyzer import analyze_brows
+from celebrity_matcher import build_user_vector, find_celebrity_matches
 from eye_analyzer import analyze_eyes
 from face_structure import analyze_face_structure
 from harmony_scores import analyze_harmony
@@ -154,6 +155,10 @@ def _run_analysis(pil_img: Image.Image, raw_bytes: bytes):
     eyes_clean  = clean(eyes)
     nose_clean  = clean(nose)
 
+    # Celebrity lookalike matching
+    user_vector = build_user_vector(face, eyes, brows, nose, lips_r, jaw, skin, harmony)
+    celeb_matches = find_celebrity_matches(user_vector, top_n=5)
+
     response = {
         "imageDimensions": {"width": img_w, "height": img_h},
         "imageBase64":     img_b64,
@@ -172,5 +177,6 @@ def _run_analysis(pil_img: Image.Image, raw_bytes: bytes):
         "skin":          clean(skin),
         "harmonyScores": harmony,
         "insights":      insights,
+        "celebrityMatches": celeb_matches,
     }
     return response
