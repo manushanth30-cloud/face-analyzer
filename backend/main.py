@@ -79,6 +79,10 @@ def confidence_overall(results: dict) -> int:
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+@app.get("/")
+def root():
+    return {"message": "Face Analyzer API is running", "docs": "/docs", "health": "/health"}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
