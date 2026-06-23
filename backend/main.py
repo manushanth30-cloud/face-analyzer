@@ -156,8 +156,8 @@ def _run_analysis(pil_img: Image.Image, raw_bytes: bytes):
     eyes_clean  = clean(eyes)
     nose_clean  = clean(nose)
 
-    # Celebrity lookalike matching
-    user_vector = build_user_vector(face, eyes, brows, nose, lips_r, jaw, skin, harmony)
+    # Celebrity lookalike matching — uses raw landmarks for precise geometry
+    user_vector = build_user_vector(landmarks, img_w, img_h)
     celeb_matches = find_celebrity_matches(user_vector, top_n=5)
 
     # Style & grooming recommendations

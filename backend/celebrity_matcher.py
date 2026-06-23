@@ -1020,125 +1020,205 @@ DIMENSION_LABELS = [
 ]
 
 
-def _normalize(value, lo, hi):
-    """Clamp *value* into [lo, hi] then scale to 0.0-1.0."""
+import math
+
+
+def _dist(p1, p2):
+    """Euclidean distance between two (x, y) tuples."""
+    return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+
+def _angle_deg(p1, center, p2):
+    """Angle at `center` formed by rays to p1 and p2, in degrees."""
+    v1 = (p1[0] - center[0], p1[1] - center[1])
+    v2 = (p2[0] - center[0], p2[1] - center[1])
+    dot = v1[0] * v2[0] + v1[1] * v2[1]
+    mag = (_dist((0, 0), v1) * _dist((0, 0), v2)) or 1e-9
+    return math.degrees(math.acos(max(-1.0, min(1.0, dot / mag))))
+
+
+def _norm(val, lo, hi):
+    """Clamp-normalize val to [0, 1] over [lo, hi]."""
     if hi == lo:
         return 0.5
-    return max(0.0, min(1.0, (value - lo) / (hi - lo)))
+    return max(0.0, min(1.0, (val - lo) / (hi - lo)))
 
 
-def build_user_vector(face, eyes, brows, nose, lips, jaw, skin, harmony):
+def build_user_vector(landmarks, img_w, img_h):
     """
-    Build a 12-dimensional proportion vector (all values 0.0-1.0)
-    from the analysis result dicts produced by the individual analyzers.
-
-    Parameters
-    ----------
-    face    : dict from face_structure.analyze_face_structure
-    eyes    : dict from eye_analyzer.analyze_eyes
-    brows   : dict from brow_analyzer.analyze_brows
-    nose    : dict from nose_analyzer.analyze_nose
-    lips    : dict from lip_analyzer.analyze_lips
-    jaw     : dict from jaw_analyzer.analyze_jaw
-    skin    : dict from skin_analyzer.analyze_skin
-    harmony : dict from harmony_scores.analyze_harmony
+    Build a 20-dimensional proportion vector from raw MediaPipe landmarks.
+    All measurements are ratio-based (independent of image size).
     """
+    def lm(idx):
+        p = landmarks[idx]
+        return (p.x * img_w, p.y * img_h)
 
-    # 1. face_ratio  — width / height, typical range 0.55-0.95
-    wl = face.get("widthToLengthRatio", 0.72)
-    face_ratio = _normalize(wl, 0.55, 0.95)
+    # ── Core reference distances ──────────────────────────────────────────────
+    top        = lm(10)   # forehead top
+    bottom     = lm(152)  # chin bottom
+    left_face  = lm(234)  # left cheek edge
+    right_face = lm(454)  # right cheek edge
+    face_h     = _dist(top, bottom) or 1e-9
+    face_w     = _dist(left_face, right_face) or 1e-9
 
-    # 2. symmetry  — average of all symmetry scores (0-100 → 0-1)
-    sym_vals = [
-        face.get("symmetryScore", 80),
-        eyes.get("asymmetryScore", 80),
-        lips.get("symmetryScore", 80),
-        jaw.get("symmetryScore", 80),
+    # 1. Face width-to-height ratio (roundness)
+    face_ratio = _norm(face_w / face_h, 0.55, 1.0)
+
+    # ── Eyes ─────────────────────────────────────────────────────────────────
+    l_eye_out  = lm(33)   # left eye outer corner
+    l_eye_in   = lm(133)  # left eye inner corner
+    r_eye_in   = lm(362)  # right eye inner corner
+    r_eye_out  = lm(263)  # right eye outer corner
+    l_eye_top  = lm(159)  # left eye top lid
+    l_eye_bot  = lm(145)  # left eye bottom lid
+    r_eye_top  = lm(386)
+    r_eye_bot  = lm(374)
+
+    eye_w_l    = _dist(l_eye_out, l_eye_in)
+    eye_w_r    = _dist(r_eye_in, r_eye_out)
+    eye_w_avg  = (eye_w_l + eye_w_r) / 2 or 1e-9
+    inter_eye  = _dist(l_eye_in, r_eye_in)
+    eye_span   = _dist(l_eye_out, r_eye_out)
+
+    # 2. Eye width ratio (eye width / face width)
+    eye_width_ratio = _norm(eye_w_avg / face_w, 0.08, 0.20)
+
+    # 3. Eye spacing (inter-eye / face_w)
+    eye_spacing = _norm(inter_eye / face_w, 0.15, 0.40)
+
+    # 4. Eye aspect ratio (height / width — hooded vs open)
+    eye_h_l = _dist(l_eye_top, l_eye_bot)
+    eye_h_r = _dist(r_eye_top, r_eye_bot)
+    eye_ar  = ((eye_h_l + eye_h_r) / 2) / eye_w_avg
+    eye_openness = _norm(eye_ar, 0.20, 0.55)
+
+    # 5. Canthal tilt angle (degrees the eye tilts upward)
+    tilt_l = math.degrees(math.atan2(
+        l_eye_in[1] - l_eye_out[1], l_eye_in[0] - l_eye_out[0]))
+    tilt_r = math.degrees(math.atan2(
+        r_eye_out[1] - r_eye_in[1], r_eye_out[0] - r_eye_in[0]))
+    canthal_tilt = _norm((tilt_l + tilt_r) / 2, -10.0, 10.0)
+
+    # ── Nose ──────────────────────────────────────────────────────────────────
+    nose_top    = lm(6)    # nose bridge
+    nose_tip    = lm(4)    # tip
+    nose_l      = lm(129)  # left ala
+    nose_r      = lm(358)  # right ala
+    nose_base   = lm(2)    # base center
+
+    nose_w      = _dist(nose_l, nose_r)
+    nose_h      = _dist(nose_top, nose_tip)
+
+    # 6. Nose width ratio (nose_w / face_w)
+    nose_width_ratio = _norm(nose_w / face_w, 0.15, 0.38)
+
+    # 7. Nose length ratio (nose_h / face_h)
+    nose_length_ratio = _norm(nose_h / face_h, 0.15, 0.35)
+
+    # 8. Nose tip projection (how much tip sticks out beyond nostrils)
+    nose_proj = _norm(nose_tip[1] - nose_base[1], -20, 20)
+
+    # ── Lips ──────────────────────────────────────────────────────────────────
+    lip_left    = lm(61)   # left corner
+    lip_right   = lm(291)  # right corner
+    upper_top   = lm(0)    # upper lip top center
+    upper_bot   = lm(13)   # upper lip bottom center
+    lower_top   = lm(14)   # lower lip top center
+    lower_bot   = lm(17)   # chin start
+
+    mouth_w     = _dist(lip_left, lip_right)
+    upper_h     = _dist(upper_top, upper_bot)
+    lower_h     = _dist(lower_top, lower_bot)
+    total_lip_h = upper_h + lower_h or 1e-9
+
+    # 9. Mouth width ratio
+    mouth_width_ratio = _norm(mouth_w / face_w, 0.25, 0.50)
+
+    # 10. Upper-to-total lip ratio
+    lip_upper_ratio = _norm(upper_h / total_lip_h, 0.30, 0.70)
+
+    # 11. Overall lip fullness (total lip height / face height)
+    lip_fullness = _norm(total_lip_h / face_h, 0.02, 0.10)
+
+    # ── Jaw ───────────────────────────────────────────────────────────────────
+    jaw_l       = lm(172)  # left jaw corner
+    jaw_r       = lm(397)  # right jaw corner
+    chin        = lm(152)
+    cheek_l     = lm(123)
+    cheek_r     = lm(352)
+    forehead_l  = lm(103)
+    forehead_r  = lm(332)
+
+    jaw_w       = _dist(jaw_l, jaw_r)
+    cheek_w     = _dist(cheek_l, cheek_r)
+    forehead_w  = _dist(forehead_l, forehead_r)
+
+    # 12. Jaw width ratio (jaw / face_w)
+    jaw_width_ratio = _norm(jaw_w / face_w, 0.50, 0.90)
+
+    # 13. Jaw-to-cheek ratio (how square/tapered)
+    jaw_to_cheek = _norm(jaw_w / (cheek_w or 1e-9), 0.60, 1.05)
+
+    # 14. Forehead-to-jaw ratio
+    forehead_to_jaw = _norm(forehead_w / (jaw_w or 1e-9), 0.70, 1.40)
+
+    # 15. Gonial angle (sharpness of jaw corner)
+    gonial_angle = _angle_deg(jaw_l, chin, jaw_r)
+    jaw_angle = _norm(gonial_angle, 80.0, 150.0)
+
+    # ── Facial thirds ─────────────────────────────────────────────────────────
+    brow_y  = (lm(107)[1] + lm(336)[1]) / 2
+    nose_y  = lm(2)[1]
+    top_y   = top[1]
+    bot_y   = bottom[1]
+
+    third1  = brow_y - top_y
+    third3  = bot_y  - nose_y
+
+    # 16. Upper-third ratio (forehead proportion)
+    upper_third = _norm(third1 / face_h, 0.20, 0.45)
+
+    # 17. Lower-third ratio
+    lower_third = _norm(third3 / face_h, 0.20, 0.45)
+
+    # 18. Cheekbone prominence ratio
+    cheek_prominence = _norm(cheek_w / face_w, 0.60, 0.95)
+
+    # 19. Philtrum length ratio
+    philtrum_top = lm(94)
+    philtrum_h   = _dist(philtrum_top, upper_top)
+    philtrum_ratio = _norm(philtrum_h / face_h, 0.04, 0.14)
+
+    # 20. Eye span to face width
+    eye_span_ratio = _norm(eye_span / face_w, 0.55, 0.90)
+
+    return [
+        round(face_ratio, 3),           # 0  face shape roundness
+        round(eye_width_ratio, 3),      # 1  eye size
+        round(eye_spacing, 3),          # 2  eye spacing
+        round(eye_openness, 3),         # 3  eye openness
+        round(canthal_tilt, 3),         # 4  canthal tilt (fox/doe eye)
+        round(nose_width_ratio, 3),     # 5  nose width
+        round(nose_length_ratio, 3),    # 6  nose length
+        round(nose_proj, 3),            # 7  nose tip projection
+        round(mouth_width_ratio, 3),    # 8  mouth width
+        round(lip_upper_ratio, 3),      # 9  upper/lower lip balance
+        round(lip_fullness, 3),         # 10 lip volume
+        round(jaw_width_ratio, 3),      # 11 jaw width
+        round(jaw_to_cheek, 3),         # 12 jaw angularity
+        round(forehead_to_jaw, 3),      # 13 forehead taper
+        round(jaw_angle, 3),            # 14 gonial angle
+        round(upper_third, 3),          # 15 forehead proportion
+        round(lower_third, 3),          # 16 lower face proportion
+        round(cheek_prominence, 3),     # 17 cheekbone prominence
+        round(philtrum_ratio, 3),       # 18 philtrum length
+        round(eye_span_ratio, 3),       # 19 eye span ratio
     ]
-    symmetry = sum(sym_vals) / len(sym_vals) / 100.0
-
-    # 3. eye_spacing  — from categorical + raw if available
-    spacing_map = {"Close-set": 0.25, "Ideal": 0.50, "Wide-set": 0.75}
-    eye_spacing = spacing_map.get(eyes.get("spacing", "Ideal"), 0.50)
-    # Refine with fifths if available
-    if face.get("facialFifths") == "Wide-set":
-        eye_spacing = max(eye_spacing, 0.70)
-    elif face.get("facialFifths") == "Close-set":
-        eye_spacing = min(eye_spacing, 0.30)
-
-    # 4. canthal_tilt  — parse the tilt string e.g. "+4.2°"
-    tilt_str = eyes.get("canthalTilt", "+0°")
-    try:
-        tilt_deg = float(tilt_str.replace("°", "").replace("+", ""))
-    except (ValueError, AttributeError):
-        tilt_deg = 0.0
-    canthal_tilt = _normalize(tilt_deg, -8.0, 8.0)
-
-    # 5. nose_proportion  — nose width relative to face
-    nose_cat_map = {"Narrow": 0.25, "Proportionate": 0.50, "Wide": 0.75}
-    nose_proportion = nose_cat_map.get(nose.get("widthRatio", "Proportionate"), 0.50)
-
-    # 6. lip_fullness
-    full_map = {"Thin": 0.20, "Medium": 0.45, "Full": 0.70, "Very full": 0.90}
-    lip_fullness = full_map.get(lips.get("fullness", "Medium"), 0.45)
-
-    # 7. lip_ratio  — upper-to-lower ratio string "1:X"
-    ratio_str = lips.get("upperLowerRatio", "1:1.6")
-    try:
-        parts = ratio_str.split(":")
-        ul = float(parts[0])
-        ll = float(parts[1]) if len(parts) > 1 else 1.0
-        raw_ratio = ul / ll if ll > 0 else 1.0
-    except (ValueError, IndexError):
-        raw_ratio = 0.625
-    lip_ratio = _normalize(raw_ratio, 0.3, 1.2)
-
-    # 8. jaw_definition
-    jaw_map = {"Undefined": 0.15, "Rounded": 0.30, "Soft": 0.45,
-               "Defined": 0.70, "Sharp": 0.90}
-    jaw_definition = jaw_map.get(jaw.get("type", "Defined"), 0.55)
-
-    # 9. cheekbone_height
-    ck_map = {"Low": 0.25, "Medium": 0.50, "High": 0.80}
-    cheekbone_height = ck_map.get(face.get("cheekboneProminence", "Medium"), 0.50)
-
-    # 10. forehead_proportion  — from facial thirds
-    thirds_map = {"Top heavy": 0.75, "Balanced": 0.50, "Bottom heavy": 0.30}
-    forehead_proportion = thirds_map.get(face.get("facialThirds", "Balanced"), 0.50)
-
-    # 11. face_taper  — jaw width vs cheekbone width
-    jw = face.get("_jawWidth", 1)
-    cw = face.get("_cheekboneWidth", 1)
-    if cw > 0:
-        taper_raw = 1.0 - (jw / cw)
-        face_taper = _normalize(taper_raw, -0.1, 0.4)
-    else:
-        face_taper = 0.50
-
-    # 12. golden_ratio  — from harmony scores
-    gr_raw = harmony.get("goldenRatioScore", 50)
-    golden_ratio = gr_raw / 100.0
-
-    vector = [
-        round(face_ratio, 2),
-        round(symmetry, 2),
-        round(eye_spacing, 2),
-        round(canthal_tilt, 2),
-        round(nose_proportion, 2),
-        round(lip_fullness, 2),
-        round(lip_ratio, 2),
-        round(jaw_definition, 2),
-        round(cheekbone_height, 2),
-        round(forehead_proportion, 2),
-        round(face_taper, 2),
-        round(golden_ratio, 2),
-    ]
-    return vector
 
 
 def _cosine_similarity(a, b):
     """Cosine similarity between two equal-length vectors."""
-    dot = sum(x * y for x, y in zip(a, b))
+    dot   = sum(x * y for x, y in zip(a, b))
     mag_a = sum(x * x for x in a) ** 0.5
     mag_b = sum(x * x for x in b) ** 0.5
     if mag_a == 0 or mag_b == 0:
@@ -1146,72 +1226,104 @@ def _cosine_similarity(a, b):
     return dot / (mag_a * mag_b)
 
 
-def _describe_similarities(user_vec, celeb_vec):
-    """Return 2-3 human-readable similarity descriptions."""
-    diffs = []
-    for i, (u, c) in enumerate(zip(user_vec, celeb_vec)):
-        diffs.append((abs(u - c), i))
-    diffs.sort()
+def _weighted_similarity(user, celeb):
+    """
+    Weighted cosine similarity emphasising the most discriminative dimensions.
+    Celebrity vectors are stored as 20-dim — if shorter (legacy 12-dim),
+    pad with 0.5 to avoid crashes.
+    """
+    celeb_v = list(celeb)
+    while len(celeb_v) < 20:
+        celeb_v.append(0.5)
+    user_v = list(user)[:20]
 
-    descriptions = []
-    threshold = 0.08
+    W = [
+        3.0,  # 0  face_ratio
+        1.5,  # 1  eye_width_ratio
+        2.0,  # 2  eye_spacing
+        1.5,  # 3  eye_openness
+        2.0,  # 4  canthal_tilt
+        2.0,  # 5  nose_width
+        1.5,  # 6  nose_length
+        1.0,  # 7  nose_proj
+        2.0,  # 8  mouth_width
+        1.5,  # 9  lip_upper_ratio
+        2.5,  # 10 lip_fullness
+        2.5,  # 11 jaw_width
+        3.0,  # 12 jaw_to_cheek
+        2.0,  # 13 forehead_to_jaw
+        2.0,  # 14 jaw_angle
+        1.5,  # 15 upper_third
+        1.5,  # 16 lower_third
+        2.5,  # 17 cheek_prominence
+        1.0,  # 18 philtrum
+        1.5,  # 19 eye_span
+    ]
+    ua = [u * w for u, w in zip(user_v, W)]
+    ca = [c * w for c, w in zip(celeb_v, W)]
+    return _cosine_similarity(ua, ca)
+
+
+def _describe_similarities(user, celeb_vec):
+    """Return 2-3 human-readable similarity reasons."""
     labels = {
-        0: "Similar face shape",
-        1: "Matching facial symmetry",
-        2: "Close eye spacing",
-        3: "Similar canthal tilt",
-        4: "Matching nose proportion",
-        5: "Similar lip fullness",
-        6: "Close lip ratio",
-        7: "Matching jaw definition",
-        8: "Similar cheekbone structure",
-        9: "Matching forehead proportion",
-        10: "Similar face taper",
-        11: "Close golden ratio score",
+        0:  "Similar face shape",
+        2:  "Matching eye spacing",
+        4:  "Similar eye tilt",
+        5:  "Similar nose width",
+        8:  "Matching mouth width",
+        10: "Similar lip fullness",
+        11: "Matching jaw width",
+        12: "Similar jaw structure",
+        13: "Similar forehead shape",
+        17: "Matching cheekbone structure",
     }
+    celeb_v = list(celeb_vec)
+    while len(celeb_v) < 20:
+        celeb_v.append(0.5)
+
+    diffs = sorted(
+        [(abs(user[i] - celeb_v[i]), i) for i in labels],
+        key=lambda x: x[0]
+    )
+    out = []
     for diff_val, idx in diffs:
-        if len(descriptions) >= 3:
+        if len(out) >= 3:
             break
-        if diff_val <= threshold or len(descriptions) < 2:
-            descriptions.append(labels[idx])
-    return descriptions
+        out.append(labels[idx])
+    return out
 
 
 def find_celebrity_matches(user_vector, top_n=5, gender_filter=None):
-    """
-    Find the top-N celebrity matches for a user vector.
-
-    Parameters
-    ----------
-    user_vector   : list[float]  – 12-dim vector from build_user_vector()
-    top_n         : int          – number of matches to return (default 5)
-    gender_filter : str or None  – "M", "F", or None for all
-
-    Returns
-    -------
-    list[dict] with keys:
-        name, matchPercent, category, faceShape, funFact, similarities
-    """
+    """Find top-N celebrity matches using weighted cosine similarity."""
     results = []
     for celeb in CELEBRITIES:
         if gender_filter and celeb["gender"] != gender_filter:
             continue
-        sim = _cosine_similarity(user_vector, celeb["vector"])
+        sim = _weighted_similarity(user_vector, celeb["vector"])
         results.append((sim, celeb))
 
     results.sort(key=lambda x: x[0], reverse=True)
     top = results[:top_n]
 
     matches = []
-    for sim, celeb in top:
-        pct = round(sim * 100, 1)
-        pct = min(99.9, max(0.1, pct))
+    for rank, (sim, celeb) in enumerate(top):
+        # Map cosine similarity to human-readable %
+        # Faces in same ballpark: cosine ~ 0.90-0.99 → show as 55-85%
+        pct = round(55 + (sim - 0.88) * 250, 1)
+        pct = min(87.0, max(48.0, pct))
+        # Each runner-up steps down a bit
+        if rank > 0:
+            pct = min(pct, matches[0]["matchPercent"] - rank * 5.5)
+            pct = max(42.0, round(pct, 1))
+
         matches.append({
             "name":         celeb["name"],
-            "matchPercent":  pct,
+            "matchPercent": pct,
             "category":     celeb["category"],
             "faceShape":    celeb["face_shape"],
             "funFact":      celeb["fun_fact"],
             "similarities": _describe_similarities(user_vector, celeb["vector"]),
         })
     return matches
+
