@@ -23,6 +23,7 @@ from jaw_analyzer import analyze_jaw
 from lip_analyzer import analyze_lips
 from nose_analyzer import analyze_nose
 from skin_analyzer import analyze_skin
+from style_recommender import generate_style_recommendations
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 app = FastAPI(title="Facial Feature Analysis API", version="1.0.0")
@@ -159,6 +160,9 @@ def _run_analysis(pil_img: Image.Image, raw_bytes: bytes):
     user_vector = build_user_vector(face, eyes, brows, nose, lips_r, jaw, skin, harmony)
     celeb_matches = find_celebrity_matches(user_vector, top_n=5)
 
+    # Style & grooming recommendations
+    style_recs = generate_style_recommendations(face, eyes, brows, nose, lips_r, jaw, skin)
+
     response = {
         "imageDimensions": {"width": img_w, "height": img_h},
         "imageBase64":     img_b64,
@@ -178,5 +182,6 @@ def _run_analysis(pil_img: Image.Image, raw_bytes: bytes):
         "harmonyScores": harmony,
         "insights":      insights,
         "celebrityMatches": celeb_matches,
+        "styleRecommendations": style_recs,
     }
     return response
