@@ -15,6 +15,7 @@ from PIL import Image, ImageOps
 
 from brow_analyzer import analyze_brows
 from celebrity_matcher import build_user_vector, find_celebrity_matches
+from embed_matcher import load_embed_db, find_celeb_matches
 from eye_analyzer import analyze_eyes
 from face_structure import analyze_face_structure
 from harmony_scores import analyze_harmony
@@ -61,6 +62,9 @@ _face_options  = mp_vision.FaceLandmarkerOptions(
     num_faces=1,
 )
 face_landmarker = mp_vision.FaceLandmarker.create_from_options(_face_options)
+
+# ── Load InsightFace embedding DB (non-fatal if missing) ──────────────────────
+load_embed_db()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -156,9 +160,13 @@ def _run_analysis(pil_img: Image.Image, raw_bytes: bytes):
     eyes_clean  = clean(eyes)
     nose_clean  = clean(nose)
 
-    # Celebrity lookalike matching — uses raw landmarks for precise geometry
-    user_vector = build_user_vector(landmarks, img_w, img_h)
-    celeb_matches = find_celebrity_matches(user_vector, top_n=5)
+    # ── Celebrity lookalike matching ──────────────────────────────────────────
+    # Prefer InsightFace embedding-based matching; fall back to proportion vectors
+    celeb_matches = find_celeb_matches(img_bgr, top_n=5)
+    if celeb_matches is None:
+        # Fallback: geometric proportion vector (no new dependencies)
+        user_vector   = build_user_vector(landmarks, img_w, img_h)
+        celeb_matches = find_celebrity_matches(user_vector, top_n=5)
 
     # Style & grooming recommendations
     style_recs = generate_style_recommendations(face, eyes, brows, nose, lips_r, jaw, skin)
