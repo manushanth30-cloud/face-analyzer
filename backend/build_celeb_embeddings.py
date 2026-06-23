@@ -6,16 +6,15 @@ Build-time script — runs inside Docker during `docker build`.
 Steps:
   1. Read celebrity list from celebrity_matcher.py
   2. Download Wikipedia profile thumbnail for each celebrity
-  3. Run InsightFace (buffalo_sc) to extract 512-dim face embedding
-  4. Save results to celeb_embeddings.pkl
+  3. Run MediaPipe face_landmarker on the photo to extract all 478 landmarks
+  4. Run `build_user_vector` on those landmarks to get a precise 20-dim geometry vector
+  5. Save results to celeb_embeddings.pkl
 
-Celebrities that fail (no Wikipedia photo, no face detected) are kept
-in a fallback list — the runtime matcher will use geometric proportion
-vectors for them instead.
+This approach uses 0MB of extra memory, requires no heavy ML dependencies
+(unlike InsightFace/ArcFace), and works entirely on the AWS Free Tier.
 """
 
 import os
-import io
 import sys
 import pickle
 import urllib.request
@@ -26,11 +25,13 @@ import logging
 
 import numpy as np
 import cv2
-from insightface.app import FaceAnalysis
+import mediapipe as mp
+from mediapipe.tasks import python as mp_python
+from mediapipe.tasks.python import vision as mp_vision
 
-# Import celebrity list from sibling module
+# Import celebrity list and vector builder from sibling module
 sys.path.insert(0, os.path.dirname(__file__))
-from celebrity_matcher import CELEBRITIES
+from celebrity_matcher import CELEBRITIES, build_user_vector
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,14 +42,26 @@ log = logging.getLogger(__name__)
 
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "celeb_embeddings.pkl")
 
-# ── InsightFace setup ──────────────────────────────────────────────────────────
-def load_insight_app():
-    app = FaceAnalysis(
-        name="buffalo_sc",
-        providers=["CPUExecutionProvider"],
+# ── MediaPipe setup ────────────────────────────────────────────────────────────
+def load_mediapipe():
+    model_path = os.path.join(os.path.dirname(__file__), "face_landmarker.task")
+    if not os.path.exists(model_path):
+        urllib.request.urlretrieve(
+            "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            model_path
+        )
+    
+    base_options = mp_python.BaseOptions(
+        model_asset_path=model_path,
+        delegate=mp_python.BaseOptions.Delegate.CPU,
     )
-    app.prepare(ctx_id=-1, det_size=(320, 320))
-    return app
+    face_options = mp_vision.FaceLandmarkerOptions(
+        base_options=base_options,
+        output_face_blendshapes=False,
+        output_facial_transformation_matrixes=False,
+        num_faces=1,
+    )
+    return mp_vision.FaceLandmarker.create_from_options(face_options)
 
 
 # ── Wikipedia photo fetcher ────────────────────────────────────────────────────
@@ -56,7 +69,7 @@ WIKI_API = "https://en.wikipedia.org/api/rest_v1/page/summary/{}"
 HEADERS  = {"User-Agent": "FaceAnalyzerApp/1.0 (educational project)"}
 
 
-def fetch_wiki_thumbnail(name: str, size: int = 400) -> bytes | None:
+def fetch_wiki_thumbnail(name: str) -> bytes | None:
     """Download the Wikipedia article thumbnail for `name`. Returns raw image bytes or None."""
     slug = urllib.parse.quote(name.replace(" ", "_"))
     url  = WIKI_API.format(slug)
@@ -76,32 +89,35 @@ def fetch_wiki_thumbnail(name: str, size: int = 400) -> bytes | None:
         return None
 
 
-def bytes_to_bgr(raw: bytes) -> np.ndarray | None:
-    """Convert raw image bytes to OpenCV BGR array."""
-    arr = np.frombuffer(raw, dtype=np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-    return img
-
-
-def get_embedding(app: FaceAnalysis, img_bgr: np.ndarray) -> np.ndarray | None:
-    """Run InsightFace and return the largest-face embedding, or None."""
-    faces = app.get(img_bgr)
-    if not faces:
+def get_geometry_vector(landmarker, raw_bytes: bytes):
+    """Run MediaPipe on raw bytes and return the 20-dim vector."""
+    arr = np.frombuffer(raw_bytes, dtype=np.uint8)
+    img_bgr = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img_bgr is None:
         return None
-    # Pick the face with the largest bounding box
-    best = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
-    emb  = best.normed_embedding  # already L2-normalised, 512-dim
-    return emb.astype(np.float32)
+        
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img_rgb)
+    
+    detection = landmarker.detect(mp_image)
+    if not detection.face_landmarks:
+        return None
+        
+    landmarks = detection.face_landmarks[0]
+    h, w, _ = img_bgr.shape
+    
+    # Compute the 20-dim geometric vector!
+    return build_user_vector(landmarks, w, h)
 
 
 # ── Main build routine ─────────────────────────────────────────────────────────
 def build():
-    log.info("Loading InsightFace buffalo_sc …")
-    app = load_insight_app()
-    log.info("InsightFace ready.")
+    log.info("Loading MediaPipe Face Landmarker …")
+    landmarker = load_mediapipe()
+    log.info("MediaPipe ready.")
 
-    results   = []   # successfully embedded celebrities
-    fallbacks = []   # celebrities that will use proportion vectors
+    results   = []   # successfully processed celebrities
+    fallbacks = []   # celebrities that will use original fake vectors
 
     total = len(CELEBRITIES)
     for i, celeb in enumerate(CELEBRITIES):
@@ -115,14 +131,8 @@ def build():
             time.sleep(0.3)
             continue
 
-        img = bytes_to_bgr(raw)
-        if img is None:
-            log.warning("  ✗ Could not decode image — using fallback")
-            fallbacks.append(celeb)
-            continue
-
-        emb = get_embedding(app, img)
-        if emb is None:
+        vector = get_geometry_vector(landmarker, raw)
+        if vector is None:
             log.warning("  ✗ No face detected — using fallback")
             fallbacks.append(celeb)
             time.sleep(0.3)
@@ -134,36 +144,24 @@ def build():
             "category":   celeb.get("category", "Celebrity"),
             "face_shape": celeb.get("face_shape", "Oval"),
             "fun_fact":   celeb.get("fun_fact", ""),
-            "embedding":  emb,          # np.ndarray shape (512,)
-            "vector":     celeb.get("vector", []),  # proportion fallback
+            "vector":     vector,  # REAL 20-dim Wikipedia geometry
         })
-        log.info("  ✓ Embedded (%d-dim)", emb.shape[0])
+        log.info("  ✓ Processed")
 
         # Be polite to Wikipedia API
         time.sleep(0.5)
 
-    # Build FAISS index for fast search
-    import faiss
-    if results:
-        matrix = np.stack([r["embedding"] for r in results]).astype(np.float32)
-        faiss.normalize_L2(matrix)
-        index  = faiss.IndexFlatIP(matrix.shape[1])  # inner product = cosine on L2-normed
-        index.add(matrix)
-    else:
-        index = None
-
     payload = {
         "celebrities": results,
         "fallbacks":   fallbacks,
-        "faiss_index": faiss.serialize_index(index) if index else None,
-        "dim":         512,
+        "dim":         20,
     }
 
     with open(OUTPUT_PATH, "wb") as f:
         pickle.dump(payload, f)
 
     log.info(
-        "Done. Embedded: %d  Fallback: %d  Saved to: %s",
+        "Done. Processed: %d  Fallback: %d  Saved to: %s",
         len(results), len(fallbacks), OUTPUT_PATH,
     )
 

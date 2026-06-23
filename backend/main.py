@@ -161,11 +161,11 @@ def _run_analysis(pil_img: Image.Image, raw_bytes: bytes):
     nose_clean  = clean(nose)
 
     # ── Celebrity lookalike matching ──────────────────────────────────────────
-    # Prefer InsightFace embedding-based matching; fall back to proportion vectors
-    celeb_matches = find_celeb_matches(img_bgr, top_n=5)
+    user_vector = build_user_vector(landmarks, img_w, img_h)
+    
+    # Try Wikipedia-based database first, fallback to hardcoded if not built
+    celeb_matches = find_celeb_matches(user_vector, top_n=5)
     if celeb_matches is None:
-        # Fallback: geometric proportion vector (no new dependencies)
-        user_vector   = build_user_vector(landmarks, img_w, img_h)
         celeb_matches = find_celebrity_matches(user_vector, top_n=5)
 
     # Style & grooming recommendations
