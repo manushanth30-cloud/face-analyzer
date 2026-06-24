@@ -22,9 +22,7 @@ RUN python -c "\
 import urllib.request; \
 urllib.request.urlretrieve('https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', 'face_landmarker.task')"
 
-# Build celebrity face geometry database from Wikipedia photos using MediaPipe
-# (Requires no heavy ML libs beyond MediaPipe, fits on 8GB EC2)
-RUN python build_celeb_embeddings.py
+# The celeb_embeddings.pkl database is pre-built and copied in via the COPY backend/ step.
 
 EXPOSE 8000
 
