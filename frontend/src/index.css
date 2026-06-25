@@ -407,15 +407,44 @@ h3 { font-size: 1rem; }
   position: relative;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  aspect-ratio: 3/4;
-  max-height: 320px;
   background: var(--bg-card);
+  /* Glowing HUD border */
+  border: 1px solid rgba(0,230,200,0.25);
+  box-shadow:
+    0 0 0 1px rgba(0,230,200,0.08),
+    0 0 18px rgba(0,230,200,0.08),
+    inset 0 0 24px rgba(0,0,0,0.4);
+}
+/* Corner HUD markers */
+.photo-wrap::before,
+.photo-wrap::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: rgba(0,230,200,0.8);
+  border-style: solid;
+  z-index: 10;
+  pointer-events: none;
+}
+.photo-wrap::before {
+  top: 8px; left: 8px;
+  border-width: 2px 0 0 2px;
+  border-radius: 3px 0 0 0;
+}
+.photo-wrap::after {
+  bottom: 8px; right: 8px;
+  border-width: 0 2px 2px 0;
+  border-radius: 0 0 3px 0;
 }
 .photo-wrap img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
   display: block;
+}
+/* Bottom-right corner marker using a pseudo on .photo-panel */
+.photo-panel .photo-wrap > svg {
+  border-radius: var(--radius-lg);
 }
 
 /* Summary card */
@@ -663,3 +692,739 @@ h3 { font-size: 1rem; }
 
 /* Section spacing */
 .section-gap { margin-top: 20px; }
+
+/* ── Upload Options (camera + upload side by side) ────── */
+.upload-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.camera-option-btn {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+}
+.camera-option-btn:hover {
+  border-color: var(--green);
+  background: var(--green-bg);
+  transform: translateY(-1px);
+}
+.camera-option-icon { font-size: 1.8rem; }
+.camera-option-label {
+  font-size: 1rem;
+  font-weight: 700;
+  display: block;
+  text-align: left;
+}
+.camera-option-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: block;
+  text-align: left;
+}
+
+.upload-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 380px;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+.upload-or::before,
+.upload-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-dim);
+}
+
+/* ── Camera Page ──────────────────────────────────────── */
+.camera-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+}
+
+.camera-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-dim);
+  background: rgba(13,17,23,0.95);
+  backdrop-filter: blur(12px);
+}
+.camera-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.camera-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px 16px;
+}
+
+/* Viewfinder */
+.viewfinder-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 3/4;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 0 0 2px var(--border), 0 0 40px rgba(63,185,80,0.15);
+}
+
+.viewfinder-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Face guide oval SVG overlay */
+.face-guide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Animated scan line */
+.camera-scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  box-shadow: 0 0 10px var(--green), 0 0 20px var(--green);
+  animation: scanLine 2.5s linear infinite;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Flash effect */
+.camera-flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 10;
+  border-radius: var(--radius-xl);
+}
+
+/* Countdown */
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 0 30px var(--green), 0 2px 8px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 5;
+  animation: pulse 0.9s ease infinite;
+}
+
+/* Corner brackets */
+.corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--green);
+  border-style: solid;
+  opacity: 0.8;
+}
+.corner.tl { top: 12px; left: 12px;  border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+.corner.tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
+.corner.bl { bottom: 12px; left: 12px;  border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
+.corner.br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
+
+/* Captured preview */
+.preview-captured {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 0 0 2px var(--green), 0 0 30px rgba(63,185,80,0.2);
+}
+.captured-img {
+  width: 100%;
+  display: block;
+  border-radius: var(--radius-xl);
+}
+.preview-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13,17,23,0.85);
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 100px;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
+/* Camera controls */
+.camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* Shutter button */
+.shutter-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 3px solid var(--green);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.shutter-btn:hover { background: rgba(63,185,80,0.1); transform: scale(1.05); }
+.shutter-btn:active { transform: scale(0.95); }
+.shutter-inner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--green);
+  display: block;
+  transition: all 0.15s ease;
+}
+.shutter-btn:active .shutter-inner { width: 44px; height: 44px; }
+
+.camera-hint {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-align: center;
+  max-width: 320px;
+}
+
+/* Camera error */
+.camera-error {
+  text-align: center;
+  color: var(--red);
+  padding: 40px 20px;
+  font-size: 0.9rem;
+  max-width: 320px;
+}
+
+/* ── Celebrity Lookalike ─────────────────────────────── */
+.celeb-section {
+  margin-top: 16px;
+}
+.celeb-section-header {
+  margin-bottom: 14px;
+}
+.celeb-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.celeb-section-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Hero (top match) */
+.celeb-hero {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px) scale(0.97);
+  transition: all 0.6s cubic-bezier(.4,0,.2,1);
+}
+.celeb-hero.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Animated glow border */
+.celeb-hero-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg,
+    var(--green) 0%,
+    var(--blue) 25%,
+    var(--purple) 50%,
+    var(--orange) 75%,
+    var(--green) 100%
+  );
+  background-size: 300% 300%;
+  animation: glowRotate 4s ease infinite;
+  z-index: -1;
+  opacity: 0.6;
+}
+@keyframes glowRotate {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+.celeb-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.celeb-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.celeb-hero-badge {
+  background: var(--green-bg);
+  border: 1px solid rgba(63,185,80,0.3);
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.celeb-hero-percent {
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  font-family: var(--font-body);
+}
+
+.celeb-hero-name {
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: var(--font-heading);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.celeb-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.celeb-dot { opacity: 0.5; }
+
+.celeb-hero-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+/* Similarity tags */
+.celeb-similarities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.celeb-sim-tag {
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  border-radius: 100px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-dim);
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* Fun fact */
+.celeb-fun-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Runner-up cards */
+.celeb-runners-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.celeb-runner-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md);
+  opacity: 0;
+  transform: translateX(-16px);
+  transition: all 0.4s cubic-bezier(.4,0,.2,1);
+}
+.celeb-runner-card.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+.celeb-runner-card:hover {
+  border-color: var(--border);
+  background: var(--bg-card);
+}
+
+.celeb-runner-rank {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  min-width: 24px;
+}
+
+.celeb-runner-info { flex: 1; min-width: 0; }
+.celeb-runner-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.celeb-runner-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.celeb-runner-sims {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.celeb-sim-tag-sm {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 100px;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+
+.celeb-runner-percent {
+  font-size: 1.4rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .celeb-hero-name { font-size: 1.3rem; }
+  .celeb-hero-percent { font-size: 1.8rem; }
+  .celeb-hero { padding: 18px; }
+}
+
+/* ── Style Guide ─────────────────────────────────────── */
+.style-guide-section {
+  margin-top: 20px;
+  padding-bottom: 8px;
+}
+.style-guide-header {
+  margin-bottom: 16px;
+}
+.style-guide-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.style-guide-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Gender buttons */
+.style-gender-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.style-gender-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 12px;
+  border-radius: var(--radius-xl);
+  border: 2px solid var(--border-dim);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+}
+.style-gender-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.style-women-btn:hover {
+  border-color: #E879A0;
+  background: rgba(232,121,160,0.08);
+}
+.style-men-btn:hover {
+  border-color: var(--blue);
+  background: rgba(88,166,255,0.08);
+}
+.style-gender-icon { font-size: 2rem; }
+.style-gender-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.style-gender-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Loading */
+.style-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.style-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border-dim);
+  border-top-color: var(--purple);
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Tabs */
+.style-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.style-tab {
+  padding: 7px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--border-dim);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.style-tab.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+.style-tab:hover { border-color: var(--border); }
+
+/* Based on */
+.style-based-on {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+  border: 1px solid var(--border-dim);
+}
+
+/* Individual section */
+.style-section {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-dim);
+}
+.style-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+.style-section-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.style-text {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+.style-tip {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+.style-avoid {
+  font-size: 0.75rem;
+  color: var(--orange);
+  margin-top: 8px;
+  display: flex;
+  gap: 5px;
+  align-items: flex-start;
+}
+
+/* Tag list */
+.style-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.style-tag {
+  font-size: 0.74rem;
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--tag-color, var(--green));
+  color: var(--tag-color, var(--green));
+  background: color-mix(in srgb, var(--tag-color, var(--green)) 10%, transparent);
+  font-weight: 600;
+}
+
+/* Makeup grid */
+.style-makeup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.style-makeup-card {
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md);
+}
+.style-makeup-key {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
+}
+.style-makeup-val {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Color swatches */
+.style-swatches-wrap { margin-bottom: 8px; }
+.style-swatches-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.style-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.style-swatch-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.style-swatch-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+.style-swatch-name {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Tips list */
+.style-tips-list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.style-tips-list li {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding-left: 16px;
+  position: relative;
+}
+.style-tips-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--blue);
+}
+
+@media (max-width: 400px) {
+  .style-makeup-grid { grid-template-columns: 1fr; }
+  .style-gender-btns { grid-template-columns: 1fr; }
+}
