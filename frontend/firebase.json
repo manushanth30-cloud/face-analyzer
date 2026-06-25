@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "aesthetica-app",
     "public": "dist",
     "ignore": [
       "firebase.json",
