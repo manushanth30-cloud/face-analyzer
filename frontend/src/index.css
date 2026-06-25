@@ -846,6 +846,126 @@ h3 { font-size: 1rem; }
 .rd-meas-ideal  { font-size: 0.62rem; color: var(--text-dim); margin-top: 2px; }
 .rd-meas-rating { font-size: 0.68rem; font-weight: 600; margin-top: 2px; }
 
+/* ── SummaryPanel photo block ────────────────────────────── */
+.sp-photo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.sp-lm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: 99px;
+  padding: 3px 10px;
+  margin-bottom: 6px;
+  width: fit-content;
+}
+.sp-lm-check { color: var(--green); font-size: 0.75rem; }
+
+/* Photo view tab strip */
+.sp-view-tabs {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  overflow: hidden;
+}
+.sp-view-tab {
+  flex: 1;
+  padding: 7px 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: var(--font-body);
+  border-right: 1px solid var(--border-dim);
+}
+.sp-view-tab:last-child { border-right: none; }
+.sp-view-tab:hover { color: var(--text-primary); background: var(--bg-hover); }
+.sp-view-tab.active {
+  color: var(--blue);
+  background: var(--blue-bg);
+  font-weight: 700;
+}
+
+/* ── Score verdict label ─────────────────────────────────── */
+.rd-score-ring {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.rd-score-verdict {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: right;
+  margin-top: 1px;
+}
+
+/* ── Facial Landmarks Guide ──────────────────────────────── */
+.rd-lm-guide { margin: 0 20px; }
+.rd-lm-guide-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+}
+@media (max-width: 500px) {
+  .rd-lm-guide-body { grid-template-columns: 1fr; }
+}
+.rd-lm-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rd-lm-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.rd-lm-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.rd-lm-guide-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rd-lm-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.rd-lm-quality { display: flex; flex-direction: column; gap: 4px; }
+.rd-lm-quality-label { font-size: 0.7rem; color: var(--text-dim); }
+.rd-lm-quality-val   { font-size: 0.88rem; font-weight: 700; color: var(--green); }
+.rd-lm-quality-bar {
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.rd-lm-quality-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 99px;
+  transition: width 1s ease;
+}
+.rd-lm-quality-count { font-size: 0.68rem; color: var(--text-dim); }
+
 /* Summary section */
 .summary-section {
   display: grid;

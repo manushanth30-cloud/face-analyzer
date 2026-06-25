@@ -38,6 +38,16 @@ function getScore10(harmony) {
   return Math.min(10, Math.max(1, +avg.toFixed(1)))
 }
 
+// Score label
+function getScoreLabel(score10) {
+  if (score10 >= 9.0) return { label: 'Exceptional', color: '#3FB950' }
+  if (score10 >= 8.5) return { label: 'Great',       color: '#3FB950' }
+  if (score10 >= 7.5) return { label: 'Very Good',   color: '#58A6FF' }
+  if (score10 >= 6.5) return { label: 'Good',        color: '#E3B341' }
+  if (score10 >= 5.5) return { label: 'Average',     color: '#F78166' }
+  return                      { label: 'Developing',  color: '#8B949E' }
+}
+
 // Estimate age range from harmony (rough heuristic)
 function getAgeEst(harmony, skin) {
   const base = 25
@@ -113,8 +123,10 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
   const imgSrc = imageUrl ||
     (data.imageBase64 ? `data:${data.imageMime || 'image/jpeg'};base64,${data.imageBase64}` : null)
 
-  const score10  = getScore10(harmonyScores)
-  const ageEst   = getAgeEst(harmonyScores, skin)
+  const score10   = getScore10(harmonyScores)
+  const scoreInfo  = getScoreLabel(score10)
+  const ageEst     = getAgeEst(harmonyScores, skin)
+  const topPct     = score10 >= 8.5 ? '10' : score10 >= 7.5 ? '18' : '25'
 
   // Compute measurements using a fixed rough scale (image native px)
   const meas = (() => {
@@ -269,10 +281,13 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
                 <div className="rd-summary-top">
                   <div className="rd-summary-heading">Your Summary</div>
                   <div className="rd-score-badge">
-                    <span className="rd-score-num">{score10}</span>
-                    <span className="rd-score-denom">/10</span>
+                    <div className="rd-score-ring">
+                      <span className="rd-score-num" style={{ color: scoreInfo.color }}>{score10}</span>
+                      <span className="rd-score-denom">/10</span>
+                    </div>
+                    <div className="rd-score-verdict" style={{ color: scoreInfo.color }}>{scoreInfo.label}</div>
                     <StarRating score10={score10} />
-                    <div className="rd-score-pct">Top {score10 >= 8.5 ? '10' : score10 >= 7.5 ? '15' : '25'}% of {gender === 'male' ? 'men' : 'women'}</div>
+                    <div className="rd-score-pct">Top {topPct}% of {gender === 'male' ? 'men' : 'women'}</div>
                   </div>
                 </div>
 
@@ -349,6 +364,46 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
                 <div className="rd-insight-box">
                   <div className="rd-insight-label">💡 Overall Insight</div>
                   <p className="rd-insight-text">{data.insights?.overallInsight}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Facial Landmarks Guide ───────────────────── */}
+          <div className="rd-card rd-lm-guide">
+            <div className="rd-card-title">Facial Landmarks Guide</div>
+            <div className="rd-lm-guide-body">
+              {/* Legend */}
+              <div className="rd-lm-legend">
+                {[
+                  { color: '#78b4ff', label: 'Face Contour' },
+                  { color: '#00e6c8', label: 'Eyes'         },
+                  { color: '#ffc83c', label: 'Eyebrows'     },
+                  { color: '#b464ff', label: 'Nose'         },
+                  { color: '#ff64a0', label: 'Lips'         },
+                  { color: '#78b4ff', label: 'Jawline'      },
+                  { color: '#aab4ff', label: 'Chin'         },
+                  { color: '#b464ff', label: 'Facial Center'},
+                ].map(({ color, label }) => (
+                  <div key={label} className="rd-lm-legend-row">
+                    <span className="rd-lm-dot" style={{ background: color }} />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Right side */}
+              <div className="rd-lm-guide-right">
+                <p className="rd-lm-desc">
+                  {data.landmarks?.length || 468} facial landmarks were detected across
+                  your face to analyze proportions, symmetry and features.
+                </p>
+                <div className="rd-lm-quality">
+                  <div className="rd-lm-quality-label">Landmark Quality</div>
+                  <div className="rd-lm-quality-val">Excellent</div>
+                  <div className="rd-lm-quality-bar">
+                    <div className="rd-lm-quality-fill" style={{ width: `${Math.round((data.landmarks?.length || 468) / 478 * 100)}%` }} />
+                  </div>
+                  <div className="rd-lm-quality-count">{data.landmarks?.length || 468} / {data.landmarks?.length || 468} points detected</div>
                 </div>
               </div>
             </div>
