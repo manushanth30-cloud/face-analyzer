@@ -1723,7 +1723,258 @@ h3 { font-size: 1rem; }
   .celeb-hero { padding: 18px; }
 }
 
+/* ── StyleGuide v2 (Premium) ────────────────────────────── */
+.sg2-wrap { padding: 0 0 24px; }
+
+.sg2-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 20px 10px;
+}
+.sg2-title { font-size: 1.25rem; font-weight: 800; font-family: var(--font-heading); }
+.sg2-sub   { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
+
+/* Gender toggle */
+.sg2-gender-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 10px;
+}
+.sg2-gender-btn {
+  padding: 7px 18px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-body);
+}
+.sg2-gender-btn:hover { color: var(--text-primary); }
+.sg2-gender-btn.active.women { background: var(--pink-bg, #1e0d20); border-color: #d070a8; color: #d070a8; }
+.sg2-gender-btn.active.men   { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+
+/* Based-on banner */
+.sg2-based-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 20px 12px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.sg2-based-banner strong { color: var(--text-primary); }
+.sg2-hmc-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* Prompt */
+.sg2-prompt {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* Men/Women wrapper */
+.sg2-men-wrap { display: flex; flex-direction: column; gap: 12px; padding: 0 20px; }
+
+/* Two-column grid */
+.sg2-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 640px) { .sg2-two-col { grid-template-columns: 1fr; } }
+
+/* Section card */
+.sg2-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sg2-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sg2-card-title { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+.sg2-card-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sg2-best-badge {
+  font-size: 0.65rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 99px;
+  background: var(--blue-bg); color: var(--blue);
+}
+.sg2-conf { font-size: 0.68rem; color: var(--green); font-weight: 600; }
+.sg2-card-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin: 0; }
+.sg2-card-body { }
+.sg2-tip {
+  display: flex; gap: 6px; align-items: flex-start;
+  font-size: 0.72rem; color: var(--text-dim);
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  margin-top: 2px;
+}
+
+/* ── Face thumbnail cards ─────────────────────────────────── */
+.sg2-thumb-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sg-face-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+.sg-face-svg {
+  width: 68px;
+  height: 74px;
+  border-radius: 6px;
+  display: block;
+}
+.sg-face-badge {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 99px;
+  white-space: nowrap;
+  z-index: 1;
+}
+.sg-face-label {
+  font-size: 0.63rem;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 70px;
+  line-height: 1.2;
+}
+
+/* Glasses card */
+.sg-glasses-wrap {
+  background: #0d1117;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Grooming grid ────────────────────────────────────────── */
+.sg2-grooming-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.sg2-grooming-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.sg2-groom-icon { font-size: 0.95rem; flex-shrink: 0; }
+
+/* ── Hair colors ──────────────────────────────────────────── */
+.sg2-hair-colors { display: flex; gap: 10px; flex-wrap: wrap; }
+.sg2-hair-color-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sg2-hair-swatch {
+  width: 52px; height: 52px; border-radius: 8px;
+  border: 1px solid var(--border-dim);
+  position: relative;
+  flex-shrink: 0;
+}
+.sg2-swatch-best {
+  position: absolute;
+  bottom: 2px; left: 50%; transform: translateX(-50%);
+  font-size: 0.5rem; font-weight: 800;
+  background: var(--green); color: #000;
+  padding: 1px 5px; border-radius: 99px;
+  white-space: nowrap;
+}
+.sg2-hair-color-name { font-size: 0.63rem; color: var(--text-muted); text-align: center; max-width: 60px; line-height: 1.2; }
+
+/* ── Clothing color palette ───────────────────────────────── */
+.sg2-colors-section { display: flex; flex-direction: column; gap: 6px; }
+.sg2-colors-label { font-size: 0.72rem; font-weight: 700; color: var(--text-primary); }
+.sg2-colors-dots { display: flex; gap: 8px; flex-wrap: wrap; }
+.sg2-color-dot-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.sg2-color-dot {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.1);
+}
+.sg2-color-dot-name { font-size: 0.58rem; color: var(--text-dim); text-align: center; max-width: 40px; line-height: 1.2; }
+.sg2-avoid-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.sg2-avoid-badge {
+  font-size: 0.68rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 99px;
+  background: var(--red-bg, #200d0d); color: #ff6b6b;
+  flex-shrink: 0;
+}
+.sg2-avoid-text { font-size: 0.72rem; color: var(--text-muted); }
+
+/* ── Makeup grid ──────────────────────────────────────────── */
+.sg2-makeup-grid { display: flex; flex-direction: column; gap: 6px; }
+.sg2-makeup-item { display: flex; gap: 8px; align-items: flex-start; }
+.sg2-makeup-key { font-size: 0.72rem; color: var(--text-dim); min-width: 80px; font-weight: 600; }
+.sg2-makeup-val { font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
+
+/* ── Pro Tips ─────────────────────────────────────────────── */
+.sg2-pro-tips-section { margin-top: 4px; }
+.sg2-pro-tips-title {
+  font-size: 0.95rem; font-weight: 800;
+  color: var(--yellow); margin-bottom: 10px;
+  padding: 0 2px;
+}
+.sg2-pro-tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.sg2-pro-tip-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sg2-pro-tip-icon { font-size: 1.1rem; }
+.sg2-pro-tip-name { font-size: 0.78rem; font-weight: 700; }
+.sg2-pro-tip-text { font-size: 0.7rem; color: var(--text-muted); line-height: 1.4; }
+
+/* Disclaimer */
+.sg2-disclaimer {
+  font-size: 0.68rem; color: var(--text-dim);
+  padding: 12px 20px 0; line-height: 1.5;
+}
+
 /* ── Style Guide ─────────────────────────────────────── */
+
 .style-guide-section {
   margin-top: 20px;
   padding-bottom: 8px;
