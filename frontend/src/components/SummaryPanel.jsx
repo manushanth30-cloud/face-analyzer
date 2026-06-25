@@ -1,11 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import LandmarkOverlay from './LandmarkOverlay'
 
-export default function SummaryPanel({ data, imageUrl }) {
+export default function SummaryPanel({ data, imageUrl, photoOnly }) {
   const [showLandmarks, setShowLandmarks] = useState(true)
+  const photoWrapRef = useRef(null)
 
   const { faceStructure, skin, insights, confidenceOverall,
           landmarks, imageDimensions } = data
+
+  // Use backend corrected base64 image (EXIF-fixed) if available
+  const imgSrc = data.imageBase64
+    ? `data:${data.imageMime || 'image/jpeg'};base64,${data.imageBase64}`
+    : imageUrl
 
   const skinColors = {
     'I': '#F5E8D8', 'II': '#E8C9A0', 'III': '#C68642',
@@ -17,13 +23,14 @@ export default function SummaryPanel({ data, imageUrl }) {
     <div className="summary-section">
       {/* Left: Photo + Landmark toggle */}
       <div className="photo-panel">
-        <div className="photo-wrap">
-          <img src={imageUrl} alt="Your face" />
+        <div className="photo-wrap" ref={photoWrapRef}>
+          <img src={imgSrc} alt="Your face" />
           <LandmarkOverlay
             landmarks={landmarks}
             imgW={imageDimensions?.width}
             imgH={imageDimensions?.height}
             visible={showLandmarks}
+            containerRef={photoWrapRef}
           />
         </div>
         <button
