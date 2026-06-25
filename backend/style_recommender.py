@@ -194,24 +194,51 @@ def generate_style_recommendations(face, eyes, brows, nose, lips, jaw, skin):
     lip_fullness  = lips.get("fullness", "Medium")
     symmetry      = face.get("symmetryScore", 80)
     brow_shape    = brows.get("shape", "Arched")
+    dark_circles  = skin.get("darkCircles", "None")
+    skin_evenness = skin.get("evennessScore", 75)
 
-    # ── Women's recommendations ───────────────────────────────────────────────
-    women = {
-        "makeup": MAKEUP_BY_SHAPE.get(face_shape, MAKEUP_BY_SHAPE["Oval"]),
-        "eyebrowShape": EYEBROW_BY_SHAPE.get(face_shape, "Natural arched brows work beautifully."),
-        "hairstyles": HAIRSTYLE_WOMEN.get(face_shape, HAIRSTYLE_WOMEN["Oval"]),
-        "hairColors": HAIR_COLOR_BY_SKIN.get(skin_tone, HAIR_COLOR_BY_SKIN["III"]),
-        "glasses": GLASSES_WOMEN.get(face_shape, "Oval frames are universally flattering."),
-        "colorPalette": COLOR_PALETTE_BY_SKIN.get(skin_tone, COLOR_PALETTE_BY_SKIN["III"]),
-        "basedOn": {
-            "faceShape": face_shape,
-            "skinTone":  f"Fitzpatrick {skin_tone}",
-            "eyeShape":  eye_shape,
-        },
+    # ── Photography tips ───────────────────────────────────────────────────────
+    angle_map = {
+        "Oval":    "Camera slightly above eye level (5–10°) angled down — shows off balanced proportions.",
+        "Round":   "Camera 10–15° above eye level, tilt chin slightly down to elongate.",
+        "Square":  "Camera at eye level, 3/4 angle to soften the strong jaw.",
+        "Heart":   "Camera at or slightly below eye level, straight-on or 3/4 to balance the forehead.",
+        "Diamond": "Camera at eye level, slight downward tilt to add width to forehead.",
+        "Oblong":  "Camera at eye level, straight-on — avoid shooting from below.",
+    }
+    photography_tips = {
+        "bestAngle":          angle_map.get(face_shape, "Camera at or slightly above eye level."),
+        "bestSide":           "Either side (very symmetric)" if symmetry >= 85 else "Try both sides — one will feel more natural. Your stronger side typically photographs better.",
+        "lightingStyle":      "Soft diffused natural light from a 45° angle (Rembrandt lighting). Avoid harsh overhead flash.",
+        "lensRecommendation": "85–105mm portrait lens to avoid distortion. Avoid wide-angle lenses (below 35mm).",
+        "postingTip":         "Natural smile with soft eyes (Duchenne smile). Relaxed jaw, slight chin-forward posture.",
+        "backgroundTip":      "Clean neutral or blurred background (bokeh) so features remain the focal point.",
     }
 
-    # ── Men's recommendations ─────────────────────────────────────────────────
-    # Grooming tip selection based on face features
+    # ── Skincare routine (by Fitzpatrick + skin concerns) ─────────────────────
+    # Morning routine — universal core + concern-specific add-ons
+    morning_routine = ["Gentle cleanser", "Vitamin C serum (brightening)", "Moisturiser", "SPF 50+ sunscreen (non-negotiable)"]
+    evening_routine = ["Double cleanse (oil + water-based)", "Retinol or Retinoid (start 2×/week)", "Niacinamide toner", "Rich moisturiser or sleeping mask"]
+    weekly_routine  = ["Chemical exfoliant (AHA/BHA — 2×/week)", "Hydrating sheet mask", "Facial massage with gua sha or jade roller"]
+
+    if dark_circles in ("Moderate", "Prominent"):
+        morning_routine.insert(1, "Caffeine + Vitamin K eye cream (AM)")
+        evening_routine.insert(-1, "Retinol eye cream (PM)")
+
+    if skin_evenness < 60:
+        morning_routine.insert(2, "Alpha Arbutin or Kojic Acid serum for evenness")
+
+    if skin_tone in ("I", "II"):
+        morning_routine.append("Avoid fragranced products — fair skin is more reactive")
+
+    skincare_routine = {
+        "morning": morning_routine,
+        "evening": evening_routine,
+        "weekly":  weekly_routine,
+        "proTip":  "Consistency beats intensity — a simple routine done daily outperforms a complex one done occasionally.",
+    }
+
+    # ── Grooming tips selection ────────────────────────────────────────────────
     grooming_tips = []
     if symmetry >= 85:
         grooming_tips.append(GROOMING_BY_FEATURES["high_symmetry"])
@@ -230,13 +257,56 @@ def generate_style_recommendations(face, eyes, brows, nose, lips, jaw, skin):
     elif lip_fullness == "Thin":
         grooming_tips.append(GROOMING_BY_FEATURES["thin_lips"])
 
+    # ── Grooming plan (men) ───────────────────────────────────────────────────
+    grooming_plan = {
+        "daily": [
+            "AM: Cleanser + lightweight moisturiser + SPF 30+ (yes, men need it too)",
+            "PM: Cleanser + eye cream if dark circles present",
+            "Beard: comb/brush, apply beard oil if over 3mm",
+            "Brows: quick spoolie brush to keep in shape",
+        ],
+        "weekly": [
+            "Exfoliate under the beard line",
+            "Trim beard edges or any strays",
+            "Deep-clean pores (clay mask or BHA exfoliant)",
+            "Scalp massage with hair oil for 5 minutes",
+        ],
+        "monthly": [
+            "Professional haircut or trim",
+            "Beard shaping and fade (barber visit)",
+            "Brow threading or waxing for clean lines",
+            "Skin check: adjust routine for seasonal changes",
+        ],
+    }
+
+    # ── Women's recommendations ───────────────────────────────────────────────
+    women = {
+        "makeup":          MAKEUP_BY_SHAPE.get(face_shape, MAKEUP_BY_SHAPE["Oval"]),
+        "eyebrowShape":    EYEBROW_BY_SHAPE.get(face_shape, "Natural arched brows work beautifully."),
+        "hairstyles":      HAIRSTYLE_WOMEN.get(face_shape, HAIRSTYLE_WOMEN["Oval"]),
+        "hairColors":      HAIR_COLOR_BY_SKIN.get(skin_tone, HAIR_COLOR_BY_SKIN["III"]),
+        "glasses":         GLASSES_WOMEN.get(face_shape, "Oval frames are universally flattering."),
+        "colorPalette":    COLOR_PALETTE_BY_SKIN.get(skin_tone, COLOR_PALETTE_BY_SKIN["III"]),
+        "photographyTips": photography_tips,
+        "skincareRoutine": skincare_routine,
+        "basedOn": {
+            "faceShape": face_shape,
+            "skinTone":  f"Fitzpatrick {skin_tone}",
+            "eyeShape":  eye_shape,
+        },
+    }
+
+    # ── Men's recommendations ─────────────────────────────────────────────────
     men = {
-        "beardStyle":  BEARD_BY_SHAPE.get(face_shape, "A well-groomed short beard suits your face shape."),
-        "hairstyles":  HAIRSTYLE_MEN.get(face_shape, HAIRSTYLE_MEN["Oval"]),
-        "glasses":     GLASSES_MEN.get(face_shape, "Wayfarers or oval frames are universally flattering."),
-        "groomingTips": grooming_tips,
-        "colorPalette": COLOR_PALETTE_BY_SKIN.get(skin_tone, COLOR_PALETTE_BY_SKIN["III"]),
-        "hairColors":   HAIR_COLOR_BY_SKIN.get(skin_tone, HAIR_COLOR_BY_SKIN["III"]),
+        "beardStyle":      BEARD_BY_SHAPE.get(face_shape, "A well-groomed short beard suits your face shape."),
+        "hairstyles":      HAIRSTYLE_MEN.get(face_shape, HAIRSTYLE_MEN["Oval"]),
+        "glasses":         GLASSES_MEN.get(face_shape, "Wayfarers or oval frames are universally flattering."),
+        "groomingTips":    grooming_tips,
+        "groomingPlan":    grooming_plan,
+        "colorPalette":    COLOR_PALETTE_BY_SKIN.get(skin_tone, COLOR_PALETTE_BY_SKIN["III"]),
+        "hairColors":      HAIR_COLOR_BY_SKIN.get(skin_tone, HAIR_COLOR_BY_SKIN["III"]),
+        "photographyTips": photography_tips,
+        "skincareRoutine": skincare_routine,
         "basedOn": {
             "faceShape": face_shape,
             "skinTone":  f"Fitzpatrick {skin_tone}",

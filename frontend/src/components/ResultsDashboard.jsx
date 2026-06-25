@@ -4,6 +4,8 @@ import ScoreGauge from './ScoreGauge'
 import SummaryPanel from './SummaryPanel'
 import CelebrityMatch from './CelebrityMatch'
 import StyleGuide from './StyleGuide'
+import ScoreBreakdown from './ScoreBreakdown'
+import InsightCard from './InsightCard'
 
 const TABS = ['Overview', 'Face', 'Eyes', 'Nose', 'Lips', 'Skin', 'Jawline', 'Scores', 'Style Guide']
 
@@ -27,15 +29,10 @@ function getMeasurements(landmarks, imgW, imgH, dims) {
   }
 }
 
-// Map harmony → /10 score
+// Map harmony → /10 score (matches backend weights: 35/30/35)
 function getScore10(harmony) {
-  const avg = (
-    (harmony?.facialHarmonyIndex || 70) * 0.35 +
-    (harmony?.overallSymmetry    || 70) * 0.30 +
-    (harmony?.goldenRatioScore   || 70) * 0.20 +
-    (harmony?.neoclassicalCompliance || 70) * 0.15
-  ) / 10
-  return Math.min(10, Math.max(1, +avg.toFixed(1)))
+  const idx = harmony?.facialHarmonyIndex ?? 70
+  return Math.min(10, Math.max(1, +(idx / 10).toFixed(1)))
 }
 
 // Score label
@@ -103,6 +100,31 @@ function MeasCard({ label, val, ideal }) {
   )
 }
 
+function GoldenRatioCard({ name, score, ideal, yours }) {
+  const color = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--yellow)' : 'var(--orange)'
+  const label = score >= 80 ? '✓ Excellent' : score >= 60 ? '≈ Good' : '⚠ Off-range'
+  return (
+    <div className="rd-meas-card">
+      <div className="rd-meas-label">{name}</div>
+      {yours !== undefined && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 4 }}>
+          <div className="rd-meas-val" style={{ color }}>
+            {yours} <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontWeight: 400 }}>actual</span>
+          </div>
+          <div className="rd-meas-ideal" style={{ textAlign: 'right' }}>
+            ideal: <strong>{ideal}</strong>
+          </div>
+        </div>
+      )}
+      <div className="rd-gr-bar-track" style={{ marginTop: 6 }}>
+        <div className="rd-gr-bar-fill" style={{ width: `${score}%`, background: color }} />
+      </div>
+      <div className="rd-meas-rating" style={{ color, marginTop: 4 }}>{label} · {score}/100</div>
+    </div>
+  )
+}
+
+
 export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
   const {
     faceStructure, eyes, eyebrows, nose,
@@ -147,14 +169,16 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
     }
   })()
 
+  const confByFeature = data.insights?.confidenceByFeature || {}
+
   const features = [
-    { title: 'Face Shape',     badge: faceStructure?.shape,    score: faceStructure?.symmetryScore, scoreLabel: 'Symmetry',  desc: `${faceStructure?.shape} faces are considered well-balanced and versatile. Facial thirds: ${faceStructure?.facialThirds}.`, delay: 0   },
-    { title: 'Eyes',           badge: eyes?.shape,             metric: 'Canthal Tilt', metricValue: eyes?.canthalTilt, desc: `${eyes?.canthalTilt?.startsWith('+') ? 'Positive' : 'Negative'} tilt — ${eyes?.canthalTilt?.startsWith('+') ? 'youthful' : 'mature'} appearance. Spacing: ${eyes?.spacing}.`, delay: 50  },
-    { title: 'Eyebrows',       badge: eyebrows?.shape,         score: eyebrows?.symmetryScore, scoreLabel: 'Symmetry',  desc: `${eyebrows?.height === 'Ideal' ? 'Ideal brow height' : eyebrows?.height + ' brow height'}. Arch peak at ${eyebrows?.archPeakPosition?.toLowerCase()}.`, delay: 100 },
-    { title: 'Nose',           badge: nose?.widthRatio,        metric: 'Tip',          metricValue: nose?.tipShape,     desc: `Nasal length is ${nose?.length?.toLowerCase()} and tip is ${nose?.tipShape?.toLowerCase()}. Bridge: ${nose?.bridgeAlignment}.`, delay: 150 },
-    { title: 'Lips',           badge: lips?.cupidsBow !== 'Flat' ? 'Balanced' : 'Flat bow', metric: 'Proportion', metricValue: lips?.mouthWidthRatio, desc: `Lip symmetry is ${lips?.symmetryScore >= 80 ? 'well balanced' : 'slightly asymmetric'}. Upper/lower ratio: ${lips?.upperLowerRatio}.`, delay: 200 },
-    { title: 'Jaw & Chin',     badge: jaw?.type,               metric: 'Gonial Angle', metricValue: jaw?.gonialAngle,   desc: `Jawline ${jaw?.type === 'Soft' || jaw?.type === 'Undefined' ? 'can be more defined with styling or fitness.' : 'is well-defined and structured.'}`, delay: 250 },
-    { title: 'Skin',           badge: `Fitzpatrick ${skin?.fitzpatrick}`, metric: 'Evenness', metricValue: skin?.evennessScore >= 75 ? 'High ›' : skin?.evennessScore >= 50 ? 'Medium ›' : 'Low ›', desc: `Overall skin evenness and tone. Undertone: ${skin?.undertone}. Dark circles: ${skin?.darkCircles}.`, delay: 300 },
+    { title: 'Face Shape',     badge: faceStructure?.shape,    score: faceStructure?.symmetryScore, scoreLabel: 'Symmetry',  desc: `${faceStructure?.shape} faces are considered well-balanced and versatile. Facial thirds: ${faceStructure?.facialThirds}.`, delay: 0,   confidence: confByFeature.faceStructure },
+    { title: 'Eyes',           badge: eyes?.shape,             metric: 'Canthal Tilt', metricValue: eyes?.canthalTilt, desc: `${eyes?.canthalTilt?.startsWith('+') ? 'Positive' : 'Negative'} tilt — ${eyes?.canthalTilt?.startsWith('+') ? 'youthful' : 'mature'} appearance. Spacing: ${eyes?.spacing}.`, delay: 50,  confidence: confByFeature.eyes },
+    { title: 'Eyebrows',       badge: eyebrows?.shape,         score: eyebrows?.symmetryScore, scoreLabel: 'Symmetry',  desc: `${eyebrows?.height === 'Ideal' ? 'Ideal brow height' : eyebrows?.height + ' brow height'}. Arch peak at ${eyebrows?.archPeakPosition?.toLowerCase()}.`, delay: 100, confidence: confByFeature.eyebrows },
+    { title: 'Nose',           badge: nose?.widthRatio,        metric: 'Tip',          metricValue: nose?.tipShape,     desc: `Nasal length is ${nose?.length?.toLowerCase()} and tip is ${nose?.tipShape?.toLowerCase()}. Bridge: ${nose?.bridgeAlignment}.`, delay: 150, confidence: confByFeature.nose },
+    { title: 'Lips',           badge: lips?.cupidsBow !== 'Flat' ? 'Balanced' : 'Flat bow', metric: 'Proportion', metricValue: lips?.mouthWidthRatio, desc: `Lip symmetry is ${lips?.symmetryScore >= 80 ? 'well balanced' : 'slightly asymmetric'}. Upper/lower ratio: ${lips?.upperLowerRatio}.`, delay: 200, confidence: confByFeature.lips },
+    { title: 'Jaw & Chin',     badge: jaw?.type,               metric: 'Gonial Angle', metricValue: jaw?.gonialAngle,   desc: `Jawline ${jaw?.type === 'Soft' || jaw?.type === 'Undefined' ? 'can be more defined with styling or fitness.' : 'is well-defined and structured.'}`, delay: 250, confidence: confByFeature.jaw },
+    { title: 'Skin',           badge: `Fitzpatrick ${skin?.fitzpatrick}`, metric: 'Evenness', metricValue: skin?.evennessScore >= 75 ? 'High ›' : skin?.evennessScore >= 50 ? 'Medium ›' : 'Low ›', desc: `Overall skin evenness and tone. Undertone: ${skin?.undertone}. Dark circles: ${skin?.darkCircles}.`, delay: 300, confidence: confByFeature.skin },
     { title: 'Facial Symmetry',badge: null,                    score: harmonyScores?.overallSymmetry, scoreLabel: 'Symmetry Score', desc: `Your face is ${harmonyScores?.overallSymmetry >= 80 ? 'well balanced left to right.' : 'slightly asymmetric, which is completely normal.'}`, delay: 350 },
   ]
 
@@ -188,7 +212,7 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
         <div className="results-header-left">
           <button id="back-btn" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={onReset} title="Analyze another photo">←</button>
           <div>
-            <div className="results-header-title">AI Facial Analysis Report</div>
+            <div className="results-header-title">Facial Harmony Report</div>
             <div className="results-header-sub">
               <span className="rd-conf-badge">
                 <span style={{ color: 'var(--green)' }}>●</span> High Confidence
@@ -279,7 +303,9 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
               {/* Score + Summary header */}
               <div className="rd-card rd-summary-card">
                 <div className="rd-summary-top">
-                  <div className="rd-summary-heading">Your Summary</div>
+                  <div className="rd-summary-heading">Facial Harmony Score
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 400, marginTop: 2 }}>Measures proportional balance across 3 scientific dimensions</div>
+                  </div>
                   <div className="rd-score-badge">
                     <div className="rd-score-ring">
                       <span className="rd-score-num" style={{ color: scoreInfo.color }}>{score10}</span>
@@ -290,6 +316,7 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
                     <div className="rd-score-pct">Top {topPct}% of {gender === 'male' ? 'men' : 'women'}</div>
                   </div>
                 </div>
+                <ScoreBreakdown harmonyScores={harmonyScores} score10={score10} />
 
                 {/* Stats row */}
                 <div className="rd-stats-row">
@@ -333,11 +360,11 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
                   </div>
                   <div>
                     <div className="rd-strengths-title" style={{ color: 'var(--orange)' }}>△ Areas to Enhance</div>
-                    <ul className="rd-list">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
                       {(data.insights?.areasToImprove || []).map((a, i) => (
-                        <li key={i}><span style={{ color: 'var(--orange)' }}>⚠</span> {a}</li>
+                        <InsightCard key={i} area={a} delay={i * 80} />
                       ))}
-                    </ul>
+                    </div>
                   </div>
                   {/* Golden Ratio */}
                   <div className="rd-golden-box">
@@ -409,17 +436,28 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
             </div>
           </div>
 
-          {/* ── Key Facial Measurements ──────────────────── */}
-          {meas && (
+          {/* ── Golden Ratio Analysis ──────────────────── */}
+          {meas && harmonyScores?.scoreBreakdown?.goldenRatio && (
             <div className="rd-card rd-meas-section">
               <div className="rd-card-title">
-                Key Facial Measurements
-                <span className="rd-meas-unit">px</span>
+                Golden Ratio Analysis
+                <span className="rd-meas-unit" style={{ background: 'var(--yellow-bg)', color: 'var(--yellow)', padding: '2px 8px', borderRadius: 6 }}>φ = 1.618</span>
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: 12, padding: '0 2px' }}>
+                Compares your actual measurements against the golden ratio and population-derived ideals.
               </div>
               <div className="rd-meas-grid">
-                {Object.values(meas).map(m => (
-                  <MeasCard key={m.label} {...m} />
+                {harmonyScores.scoreBreakdown.goldenRatio.components.map(c => (
+                  <GoldenRatioCard key={c.name} {...c} />
                 ))}
+              </div>
+            </div>
+          )}
+          {meas && !harmonyScores?.scoreBreakdown?.goldenRatio && (
+            <div className="rd-card rd-meas-section">
+              <div className="rd-card-title">Key Facial Measurements<span className="rd-meas-unit">px</span></div>
+              <div className="rd-meas-grid">
+                {Object.values(meas).map(m => <MeasCard key={m.label} {...m} />)}
               </div>
             </div>
           )}
@@ -462,7 +500,7 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
                 </div>
               </div>
               <div className="features-grid">
-                {visibleFeatures.map(f => <FeatureCard key={f.title} {...f} />)}
+                {visibleFeatures.map((f, i) => <FeatureCard key={f.title} {...f} delay={i * 75} />)}
               </div>
             </div>
           )}
@@ -472,7 +510,7 @@ export default function ResultsDashboard({ data, imageUrl, gender, onReset }) {
             <div className="scores-title">Overall Scores</div>
             <div className="scores-sub">Higher score means better balance and harmony.</div>
             <div className="scores-grid">
-              {gauges.map(g => <ScoreGauge key={g.label} {...g} />)}
+              {gauges.map((g, i) => <ScoreGauge key={g.label} {...g} delay={i * 100} />)}
             </div>
           </div>
 

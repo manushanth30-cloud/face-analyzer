@@ -41,7 +41,7 @@ export default function UploadZone({ onAnalyze, onOpenCamera, loading, serverErr
     <div className="upload-page fade-up">
       {/* Title */}
       <div className="upload-title">
-        <h1>Facial Feature Analysis</h1>
+        <h1>Asthetica</h1>
         <p>AI-powered face insights for grooming &amp; style</p>
       </div>
 

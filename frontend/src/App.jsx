@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import { AnimatePresence, motion } from 'framer-motion'
 import './index.css'
 import UploadZone       from './components/UploadZone'
 import ScanAnimation    from './components/ScanAnimation'
@@ -16,6 +17,25 @@ const STATES = {
   GENDER:  'GENDER',
   RESULTS: 'RESULTS',
 }
+
+const pageVariants = {
+  initial: { opacity: 0, y: 15, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+  exit:    { opacity: 0, y: -10, scale: 0.98, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }
+}
+
+const PageWrapper = ({ children, keyName }) => (
+  <motion.div
+    key={keyName}
+    variants={pageVariants}
+    initial="initial"
+    animate="animate"
+    exit="exit"
+    style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+  >
+    {children}
+  </motion.div>
+)
 
 export default function App() {
   const [screen,   setScreen]   = useState(STATES.UPLOAD)
@@ -63,38 +83,48 @@ export default function App() {
   }
 
   return (
-    <>
+    <AnimatePresence mode="wait">
       {screen === STATES.UPLOAD && (
-        <UploadZone
-          onAnalyze={handleAnalyze}
-          onOpenCamera={() => setScreen(STATES.CAMERA)}
-          loading={false}
-          serverError={error}
-        />
+        <PageWrapper keyName="upload">
+          <UploadZone
+            onAnalyze={handleAnalyze}
+            onOpenCamera={() => setScreen(STATES.CAMERA)}
+            loading={false}
+            serverError={error}
+          />
+        </PageWrapper>
       )}
       {screen === STATES.CAMERA && (
-        <CameraCapture
-          onCapture={(file) => handleAnalyze(file)}
-          onCancel={() => setScreen(STATES.UPLOAD)}
-        />
+        <PageWrapper keyName="camera">
+          <CameraCapture
+            onCapture={(file) => handleAnalyze(file)}
+            onCancel={() => setScreen(STATES.UPLOAD)}
+          />
+        </PageWrapper>
       )}
       {screen === STATES.SCANNING && (
-        <ScanAnimation imageUrl={imageUrl} />
+        <PageWrapper keyName="scanning">
+          <ScanAnimation imageUrl={imageUrl} />
+        </PageWrapper>
       )}
       {screen === STATES.GENDER && (
-        <GenderSelect
-          imageUrl={imageUrl}
-          onSelect={handleGenderSelect}
-        />
+        <PageWrapper keyName="gender">
+          <GenderSelect
+            imageUrl={imageUrl}
+            onSelect={handleGenderSelect}
+          />
+        </PageWrapper>
       )}
       {screen === STATES.RESULTS && (
-        <ResultsDashboard
-          data={results}
-          imageUrl={imageUrl}
-          gender={gender}
-          onReset={handleReset}
-        />
+        <PageWrapper keyName="results">
+          <ResultsDashboard
+            data={results}
+            imageUrl={imageUrl}
+            gender={gender}
+            onReset={handleReset}
+          />
+        </PageWrapper>
       )}
-    </>
+    </AnimatePresence>
   )
 }

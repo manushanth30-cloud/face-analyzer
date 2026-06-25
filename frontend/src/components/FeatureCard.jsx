@@ -60,6 +60,7 @@ function MetricRow({ label, value, color }) {
  * @param {string} metricValue - Optional metric value (e.g. "+3.2°")
  * @param {string} desc        - Description text
  * @param {number} delay       - Animation delay
+ * @param {number} confidence  - Optional 0-100 confidence score for this feature
  */
 export default function FeatureCard({
   title,
@@ -70,6 +71,7 @@ export default function FeatureCard({
   metricValue,
   desc,
   delay = 0,
+  confidence,
 }) {
   const theme = ICONS[title] || { icon: '◆', color: 'var(--green)', bg: 'var(--green-bg)' }
 
@@ -90,6 +92,14 @@ export default function FeatureCard({
           {theme.icon}
         </div>
         <span className="feature-card-name">{title}</span>
+        {confidence !== undefined && (
+          <span
+            className="feature-card-conf"
+            title={`Analysis confidence: ${confidence}%`}
+          >
+            {confidence}%
+          </span>
+        )}
       </div>
 
       {/* Badge */}

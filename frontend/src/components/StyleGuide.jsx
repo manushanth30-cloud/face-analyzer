@@ -343,6 +343,73 @@ function MenGuide({ men, faceShape, skinCode }) {
         </SCard>
       </div>
 
+      {/* Photography Tips */}
+      {men.photographyTips && (
+        <SCard title="📸 Photography Tips" color="var(--blue)">
+          <div className="sg2-photo-grid">
+            {[
+              { icon: '📐', label: 'Best Angle',    val: men.photographyTips.bestAngle },
+              { icon: '↔️', label: 'Best Side',     val: men.photographyTips.bestSide },
+              { icon: '💡', label: 'Lighting',      val: men.photographyTips.lightingStyle },
+              { icon: '📷', label: 'Lens',          val: men.photographyTips.lensRecommendation },
+              { icon: '😊', label: 'Expression',    val: men.photographyTips.postingTip },
+              { icon: '🖼️', label: 'Background',   val: men.photographyTips.backgroundTip },
+            ].map(({ icon, label, val }) => (
+              <div key={label} className="sg2-photo-item">
+                <div className="sg2-photo-icon">{icon}</div>
+                <div>
+                  <div className="sg2-photo-label">{label}</div>
+                  <div className="sg2-photo-val">{val}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SCard>
+      )}
+
+      {/* Skincare Routine */}
+      {men.skincareRoutine && (
+        <SCard title="✨ Skincare Routine" color="var(--teal)">
+          {men.skincareRoutine.proTip && (
+            <div className="sg2-skincare-tip">💡 {men.skincareRoutine.proTip}</div>
+          )}
+          <div className="sg2-skincare-grid">
+            {[{key:'morning',icon:'🌅',label:'Morning'},{key:'evening',icon:'🌙',label:'Evening'},{key:'weekly',icon:'📅',label:'Weekly'}].map(({ key, icon, label }) => (
+              (men.skincareRoutine[key] || []).length > 0 && (
+                <div key={key} className="sg2-skincare-col">
+                  <div className="sg2-skincare-col-title">{icon} {label}</div>
+                  <ul className="sg2-skincare-list">
+                    {(men.skincareRoutine[key] || []).map((item, i) => (
+                      <li key={i}><span style={{color:'var(--teal)'}}>▸</span> {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            ))}
+          </div>
+        </SCard>
+      )}
+
+      {/* Grooming Plan */}
+      {men.groomingPlan && (
+        <SCard title="🗓️ Grooming Plan" color="var(--purple)">
+          <div className="sg2-skincare-grid">
+            {[{key:'daily',icon:'📆',label:'Daily'},{key:'weekly',icon:'📅',label:'Weekly'},{key:'monthly',icon:'🗓️',label:'Monthly'}].map(({ key, icon, label }) => (
+              (men.groomingPlan[key] || []).length > 0 && (
+                <div key={key} className="sg2-skincare-col">
+                  <div className="sg2-skincare-col-title">{icon} {label}</div>
+                  <ul className="sg2-skincare-list">
+                    {(men.groomingPlan[key] || []).map((item, i) => (
+                      <li key={i}><span style={{color:'var(--purple)'}}>▸</span> {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            ))}
+          </div>
+        </SCard>
+      )}
+
       {/* Pro Tips */}
       <div className="sg2-pro-tips-section">
         <div className="sg2-pro-tips-title">⭐ Additional Pro Tips</div>
@@ -494,6 +561,53 @@ function WomenGuide({ women, faceShape, skinCode }) {
           )}
         </div>
       </SCard>
+
+      {/* Photography Tips */}
+      {women.photographyTips && (
+        <SCard title="📸 Photography Tips" color="var(--blue)">
+          <div className="sg2-photo-grid">
+            {[
+              { icon: '📐', label: 'Best Angle',  val: women.photographyTips.bestAngle },
+              { icon: '↔️', label: 'Best Side',   val: women.photographyTips.bestSide },
+              { icon: '💡', label: 'Lighting',    val: women.photographyTips.lightingStyle },
+              { icon: '📷', label: 'Lens',        val: women.photographyTips.lensRecommendation },
+              { icon: '😊', label: 'Expression',  val: women.photographyTips.postingTip },
+              { icon: '🖼️', label: 'Background', val: women.photographyTips.backgroundTip },
+            ].map(({ icon, label, val }) => (
+              <div key={label} className="sg2-photo-item">
+                <div className="sg2-photo-icon">{icon}</div>
+                <div>
+                  <div className="sg2-photo-label">{label}</div>
+                  <div className="sg2-photo-val">{val}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SCard>
+      )}
+
+      {/* Skincare Routine */}
+      {women.skincareRoutine && (
+        <SCard title="✨ Skincare Routine" color="var(--teal)">
+          {women.skincareRoutine.proTip && (
+            <div className="sg2-skincare-tip">💡 {women.skincareRoutine.proTip}</div>
+          )}
+          <div className="sg2-skincare-grid">
+            {[{key:'morning',icon:'🌅',label:'Morning'},{key:'evening',icon:'🌙',label:'Evening'},{key:'weekly',icon:'📅',label:'Weekly'}].map(({ key, icon, label }) => (
+              (women.skincareRoutine[key] || []).length > 0 && (
+                <div key={key} className="sg2-skincare-col">
+                  <div className="sg2-skincare-col-title">{icon} {label}</div>
+                  <ul className="sg2-skincare-list">
+                    {(women.skincareRoutine[key] || []).map((item, i) => (
+                      <li key={i}><span style={{color:'var(--teal)'}}>▸</span> {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            ))}
+          </div>
+        </SCard>
+      )}
     </div>
   )
 }

@@ -54,6 +54,7 @@ export default function CelebrityMatch({ matches }) {
 
   const topMatch = matches[0]
   const runners  = matches.slice(1)
+  const [expandedRunner, setExpandedRunner] = useState(null)
 
   return (
     <div className="celeb-section fade-up">
@@ -94,12 +95,17 @@ export default function CelebrityMatch({ matches }) {
             {getMatchLabel(topMatch.matchPercent)}
           </div>
 
-          {/* Why you match */}
-          <div className="celeb-similarities">
-            {(topMatch.similarities || []).map((s, i) => (
-              <span key={i} className="celeb-sim-tag">✓ {s}</span>
-            ))}
-          </div>
+          {/* Why you match — always visible for hero */}
+          {(topMatch.similarities?.length > 0) && (
+            <div className="celeb-why-wrap">
+              <div className="celeb-why-title">▶ Why this match?</div>
+              <div className="celeb-similarities">
+                {topMatch.similarities.map((s, i) => (
+                  <span key={i} className="celeb-sim-tag">✓ {s}</span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {topMatch.funFact && (
             <div className="celeb-fun-fact">
@@ -124,17 +130,26 @@ export default function CelebrityMatch({ matches }) {
                 <div className="celeb-runner-meta">
                   {getCategoryEmoji(m.category)} {m.category} · {m.faceShape}
                 </div>
-                {m.similarities?.length > 0 && (
-                  <div className="celeb-runner-sims">
-                    {m.similarities.slice(0, 2).map((s, j) => (
-                      <span key={j} className="celeb-sim-tag-sm">✓ {s}</span>
-                    ))}
-                  </div>
-                )}
               </div>
-              <div className="celeb-runner-percent" style={{ color: getMatchColor(m.matchPercent) }}>
-                {m.matchPercent}%
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                <div className="celeb-runner-percent" style={{ color: getMatchColor(m.matchPercent) }}>
+                  {m.matchPercent}%
+                </div>
+                <button
+                  className="celeb-why-btn"
+                  onClick={() => setExpandedRunner(expandedRunner === i ? null : i)}
+                  style={{ color: getMatchColor(m.matchPercent) }}
+                >
+                  {expandedRunner === i ? '▲ Hide' : '▶ Why?'}
+                </button>
               </div>
+              {expandedRunner === i && m.similarities?.length > 0 && (
+                <div className="celeb-runner-why fade-up">
+                  {m.similarities.map((s, j) => (
+                    <span key={j} className="celeb-sim-tag-sm">✓ {s}</span>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

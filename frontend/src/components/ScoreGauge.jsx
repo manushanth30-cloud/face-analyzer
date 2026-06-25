@@ -56,7 +56,7 @@ export default function ScoreGauge({ value, label, sublabel, color, delay = 0 })
   }, [filled, gap, arcLen, delay])
 
   return (
-    <div className="gauge-card">
+    <div className="gauge-card" style={{ animationDelay: `${delay}ms` }}>
       <div className="gauge-svg-wrap">
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           {/* Track arc */}
