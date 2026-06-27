@@ -20,12 +20,15 @@ export default function CameraCapture({ onCapture, onCancel }) {
     setCameraError('')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: { ideal: mode }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       })
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch(e => console.error("Video play error:", e))
+        }
       }
     } catch (err) {
       setCameraError('Camera access denied. Please allow camera permission and try again.')

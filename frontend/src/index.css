@@ -2803,3 +2803,21 @@ h3 { font-size: 1rem; }
   .sbd-subcom { grid-template-columns: 1fr auto; }
   .sbd-subcom-bar-track { display: none; }
 }
+
+
+/* --- Global Mobile Optimizations --- */
+@media (max-width: 480px) {
+  .container { padding: 0 12px; }
+  .card { padding: 16px; border-radius: var(--radius-lg); }
+  .scores-grid { gap: 8px; }
+  .gauge-card { padding: 16px 8px 12px; }
+  .gauge-number { font-size: 1.3rem; }
+  .summary-card { padding: 14px; }
+  .photo-wrap { border-radius: var(--radius-md); }
+  .camera-option-btn { padding: 14px 16px; }
+  .dropzone-card { padding: 24px 16px; }
+  .btn { font-size: 0.85rem; padding: 10px 16px; }
+  .summary-stat { padding: 10px; flex-direction: column; text-align: center; }
+  .summary-stat-text { align-items: center; }
+  body { font-size: 14px; overflow-x: hidden; }
+}
